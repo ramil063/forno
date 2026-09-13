@@ -36,6 +36,10 @@ shell:
 	cp .env.example .env
 	@echo "создан .env из .env.example — пароль при желании поменяй"
 
+# Без .env docker compose не подставит порты и доступы к базе, поэтому он нужен всем
+# целям, которые заходят в compose — иначе первый же make после клонирования упадёт
+image shell build test test-race vet fmt fmt-diff lint lint-fix versions ps db-up db-down db-logs psql: .env
+
 db-up: .env
 	$(COMPOSE) up -d postgres
 	@echo "PostgreSQL поднимается, порт смотри в .env"
