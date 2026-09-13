@@ -22,6 +22,7 @@
 ```bash
 git clone https://github.com/ramil063/forno.git && cd forno
 make image    # собрать образ с инструментами, нужно один раз, ~5 минут
+make hooks    # подключить git-хуки, один раз после клонирования
 make db-up    # поднять PostgreSQL; .env создастся из .env.example сам
 make build    # собрать все модули
 make lint     # форматирование и проверки

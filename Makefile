@@ -3,12 +3,13 @@ TOOLS := $(COMPOSE) run --rm -T tools
 
 .DEFAULT_GOAL := help
 
-.PHONY: help image shell db-up db-down db-logs psql build test test-race vet fmt fmt-diff lint lint-fix versions ps clean
+.PHONY: help image shell hooks db-up db-down db-logs psql build test test-race vet fmt fmt-diff lint lint-fix versions ps clean
 
 help:
 	@echo "forno — полезные команды:"
 	@echo "  make image      собрать образ с инструментами (один раз, ~5 минут)"
 	@echo "  make shell      зайти в контейнер с исходниками"
+	@echo "  make hooks      подключить git-хуки (один раз после клонирования)"
 	@echo "  make db-up      поднять PostgreSQL (при первом запуске создаст .env)"
 	@echo "  make db-down    остановить контейнеры"
 	@echo "  make db-logs    смотреть логи PostgreSQL"
@@ -30,6 +31,13 @@ image:
 
 shell:
 	$(COMPOSE) run --rm tools bash
+
+# Хуки лежат в репозитории, но включаются локально — поэтому этот вызов нужен один раз.
+# pre-commit и pre-push не дают коммитить и пушить прямо в main.
+hooks:
+	git config core.hooksPath .githooks
+	chmod +x .githooks/pre-commit .githooks/pre-push
+	@echo "хуки подключены: правки в main теперь идут только через ветку и PR"
 
 # Локальный файл с паролями в git не хранится — создаём его из шаблона
 .env:
