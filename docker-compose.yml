@@ -1,0 +1,57 @@
+name: forno
+
+services:
+  # Один общий контейнер для всего: сборка, тесты, генерация кода, shell.
+  # Исходники примонтированы как том, поэтому правки видны сразу,
+  # а кеши Go живут в именованных томах и не теряются между запусками.
+  tools:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.tools
+      args:
+        UID: 1000
+        GID: 1000
+    image: forno/tools:go1.27.1
+    working_dir: /work
+    volumes:
+      - .:/work
+      - go-mod-cache:/home/dev/go
+      - go-build-cache:/home/dev/.cache
+    environment:
+      # Внутри compose-сети база доступна по имени сервиса, а не через localhost.
+      # Значения из .env (localhost:5440) — для инструментов на хосте,
+      # эти — для кода и тестов, которые бегут внутри контейнера.
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sleep infinity
+
+  # PostgreSQL. Порты и доступы берутся из .env, шаблон — .env.example.
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # Kafka появится на этапе 8, Redis — на этапе 9.
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
+  postgres-data:

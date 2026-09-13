@@ -1,0 +1,24 @@
+# Скомпилированные бинарники и артефакты air
+bin/
+tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+main
+
+# Покрытие тестами
+*.out
+coverage.*
+*.coverprofile
+
+# Секреты и локальные настройки
+.env
+.env.local
+
+# Редакторы
+.idea/
+.vscode/
+*.swp

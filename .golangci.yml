@@ -1,0 +1,39 @@
+# Единый конфиг форматирования и проверок для всех модулей воркспейса.
+# Форматирование:  make fmt
+# Проверки:        make lint
+version: "2"
+
+linters:
+  # standard = errcheck, govet, ineffassign, staticcheck, unused
+  default: standard
+  enable:
+    - bodyclose     # не забыть закрыть тело HTTP-ответа
+    - contextcheck  # context доходит до самого низа, а не теряется по пути
+    - errorlint     # ошибки сравниваем через errors.Is/As, а не через ==
+    - gocritic      # набор замечаний по стилю и потенциальным багам
+    - misspell      # опечатки в комментариях и строках
+    - noctx         # HTTP-запросы только с context
+    - nolintlint    # //nolint должен быть обоснован, а не глушить всё подряд
+    - prealloc      # слайсы известной длины выделяем сразу
+    - revive        # стилевые правила вместо устаревшего golint
+    - unconvert     # лишние приведения типов
+  exclusions:
+    rules:
+      # В тестах часть правил только мешает
+      - path: _test\.go
+        linters:
+          - bodyclose
+          - noctx
+          - gocritic
+
+formatters:
+  enable:
+    - gofmt   # отступы, выравнивание, переводы строк
+    - gci     # порядок импортов тремя группами
+  settings:
+    gci:
+      custom-order: true
+      sections:
+        - standard                          # fmt, os, context — стандартная библиотека
+        - default                           # внешние библиотеки
+        - prefix(github.com/ramil063/forno) # наши собственные пакеты
