@@ -57,8 +57,15 @@ gh pr merge --squash --delete-branch   # влили и убрали ветку
 git switch main && git pull
 ```
 
-Запрет прямых пушей в `main` включается в настройках GitHub:
-Settings → Branches → Add branch protection rule → Require a pull request before merging.
+Защита стоит с двух сторон.
+
+**На GitHub:** `main` защищён — прямой пуш запрещён, обязателен PR (0 обязательных апрувов,
+чтобы можно было мержить самому), force-push и удаление ветки запрещены, правила действуют
+и на владельца репозитория.
+
+**Локально:** `make hooks` подключает хуки из `.githooks/`. `pre-commit` не даёт коммитить
+прямо в `main`, `pre-push` не даёт туда пушить. Осознанный обход — переменные
+`FORNO_ALLOW_MAIN_COMMIT=1` и `FORNO_ALLOW_MAIN_PUSH=1`.
 
 ## Сервисы
 

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Прямой пуш в main запрещён: изменения приходят только через PR.
+# Осознанный обход: FORNO_ALLOW_MAIN_PUSH=1 git push ...
+set -u
+
+protected="main"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	[ -z "${remote_ref:-}" ] && continue
+	if [ "$remote_ref" != "refs/heads/$protected" ]; then
+		continue
+	fi
+	if [ -n "${FORNO_ALLOW_MAIN_PUSH:-}" ]; then
+		echo "pre-push: пуш в $protected разрешён через FORNO_ALLOW_MAIN_PUSH" >&2
+		exit 0
+	fi
+	echo "" >&2
+	echo "pre-push: прямой пуш в '$protected' запрещён." >&2
+	echo "  Правило: один этап — одна ветка, в main только через PR." >&2
+	echo "  Что делать:  git switch -c stage/N-краткое-имя" >&2
+	echo "  Осознанный обход:  FORNO_ALLOW_MAIN_PUSH=1 git push ..." >&2
+	echo "" >&2
+	exit 1
+done
+
+exit 0

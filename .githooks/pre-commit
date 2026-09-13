@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Не даём коммитить прямо в main: сначала ветка, потом PR.
+# Осознанный обход: FORNO_ALLOW_MAIN_COMMIT=1 git commit ...
+set -u
+
+protected="main"
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+
+if [ "$branch" != "$protected" ]; then
+	exit 0
+fi
+
+if [ -n "${FORNO_ALLOW_MAIN_COMMIT:-}" ]; then
+	echo "pre-commit: коммит в $protected разрешён через FORNO_ALLOW_MAIN_COMMIT" >&2
+	exit 0
+fi
+
+echo "" >&2
+echo "pre-commit: коммитить прямо в '$protected' запрещено." >&2
+echo "  Сделай ветку:  git switch -c stage/N-краткое-имя" >&2
+echo "  Осознанный обход:  FORNO_ALLOW_MAIN_COMMIT=1 git commit ..." >&2
+echo "" >&2
+exit 1
