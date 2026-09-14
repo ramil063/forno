@@ -24,6 +24,8 @@ help:
 	@echo "  make lint-fix   то же, но с автоматическим исправлением"
 	@echo "  make versions   версии Go и инструментов внутри образа"
 	@echo "  make ps         статус контейнеров"
+	@echo "  make start      старт контейнеров"
+	@echo "  make stop       стоп контейнеров"
 	@echo "  make clean      удалить артефакты сборки"
 
 image:
@@ -103,3 +105,9 @@ ps:
 
 clean:
 	rm -rf bin tmp coverage.out coverage.html
+
+start:
+	$(COMPOSE) start
+
+stop:
+	$(COMPOSE) stop
