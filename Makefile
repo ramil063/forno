@@ -3,7 +3,7 @@ TOOLS := $(COMPOSE) run --rm -T tools
 
 .DEFAULT_GOAL := help
 
-.PHONY: help image shell hooks db-up db-down db-logs psql build test test-race vet fmt fmt-diff lint lint-fix versions ps clean
+.PHONY: help image shell hooks db-up db-down db-logs psql build test test-race vet fmt fmt-diff lint lint-fix versions ps clean migrate-up migrate-down migrate-status migrate-create
 
 help:
 	@echo "forno — полезные команды:"
@@ -14,6 +14,10 @@ help:
 	@echo "  make db-down    остановить контейнеры"
 	@echo "  make db-logs    смотреть логи PostgreSQL"
 	@echo "  make psql       открыть psql внутри контейнера"
+	@echo "  make migrate-up       накатить миграции"
+	@echo "  make migrate-down     откатить последнюю миграцию"
+	@echo "  make migrate-status   что накатано, что нет"
+	@echo "  make migrate-create name=add_ingredients   создать пустую миграцию"
 	@echo "  make build      go build ./..."
 	@echo "  make test       go test ./..."
 	@echo "  make test-race  go test -race ./... (тесты на гонки)"
@@ -48,7 +52,7 @@ hooks:
 
 # Без .env docker compose не подставит порты и доступы к базе, поэтому он нужен всем
 # целям, которые заходят в compose — иначе первый же make после клонирования упадёт
-image shell build test test-race vet fmt fmt-diff lint lint-fix versions ps db-up db-down db-logs psql: .env
+image shell build test test-race vet fmt fmt-diff lint lint-fix versions ps db-up db-down db-logs psql migrate-up migrate-down migrate-status migrate-create: .env
 
 db-up: .env
 	$(COMPOSE) up -d postgres
@@ -63,6 +67,27 @@ db-logs: .env
 # psql внутри контейнера: переменные окружения там уже есть, пароль не светим снаружи
 psql: .env
 	$(COMPOSE) exec postgres sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+
+# Миграции inventory-service. Строку подключения goose берёт из POSTGRES_DSN —
+# внутрь контейнера её подставляет compose, адрес уже внутрисетевой (postgres:5432).
+# Каталог миграций пока один; когда миграции появятся у других сервисов,
+# здесь появятся отдельные цели или параметр с именем сервиса.
+MIGRATIONS_DIR := services/inventory-service/migrations
+
+migrate-up:
+	$(TOOLS) sh -c 'goose -dir $(MIGRATIONS_DIR) postgres "$$POSTGRES_DSN" up'
+
+# goose down откатывает ровно одну миграцию — последнюю
+migrate-down:
+	$(TOOLS) sh -c 'goose -dir $(MIGRATIONS_DIR) postgres "$$POSTGRES_DSN" down'
+
+migrate-status:
+	$(TOOLS) sh -c 'goose -dir $(MIGRATIONS_DIR) postgres "$$POSTGRES_DSN" status'
+
+# make migrate-create name=add_ingredients — goose добавит файл с номером и шаблоном Up/Down
+migrate-create:
+	@if [ -z "$(name)" ]; then echo "укажи имя: make migrate-create name=add_ingredients"; exit 1; fi
+	$(TOOLS) sh -c 'mkdir -p $(MIGRATIONS_DIR) && goose -dir $(MIGRATIONS_DIR) create $(name) sql'
 
 # go.work в корне не даёт использовать ./... из корня: Go ругается, что префикс
 # каталога не содержит модулей воркспейса. Поэтому обходим модули по одному.
@@ -98,7 +123,7 @@ lint-fix:
 	$(call for_each_module,golangci-lint run --fix ./...)
 
 versions:
-	$(TOOLS) sh -c 'go version && buf --version && protoc-gen-go --version && protoc-gen-go-grpc --version && mockery --version && golangci-lint --version && air -v'
+	$(TOOLS) sh -c 'go version && buf --version && protoc-gen-go --version && protoc-gen-go-grpc --version && mockery --version && golangci-lint --version && air -v && goose -version'
 
 ps:
 	$(COMPOSE) ps
