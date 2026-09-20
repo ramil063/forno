@@ -15,17 +15,16 @@ services:
     working_dir: /work
     volumes:
       - .:/work
-      - go-mod-cache:/home/dev/go
-      - go-build-cache:/home/dev/.cache
+      # Тома навешены точечно: только кеш модулей и кеш сборки, а не весь /home/dev.
+      # Том маскирует образ под собой, поэтому бинарники инструментов (GOBIN=/home/dev/bin)
+      # лежат вне этих путей и всегда берутся из образа.
+      - go-mod-cache:/home/dev/go/pkg/mod
+      - go-build-cache:/home/dev/.cache/go-build
     environment:
-      # Внутри compose-сети база доступна по имени сервиса, а не через localhost.
-      # Значения из .env (localhost:5440) — для инструментов на хосте,
-      # эти — для кода и тестов, которые бегут внутри контейнера.
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Строка подключения целиком — одной переменной: код её не собирает из частей,
+      # её подставляет окружение (здесь — compose, на этапе 11 — оркестратор).
+      # Отличается от .env: внутри compose-сети база доступна по имени сервиса, а не localhost.
+      POSTGRES_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
