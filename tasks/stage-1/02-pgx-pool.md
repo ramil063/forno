@@ -11,14 +11,34 @@
 
 ```
 services/inventory-service/
-  cmd/main.go                             правка: взять DSN, создать пул, проверить, закрыть
-  internal/storage/postgres/pool.go       конструктор пула
+  cmd/main.go                             правка: собрать Config из окружения, создать пул, проверить, закрыть
+  internal/storage/postgres/pool.go       Config и конструктор пула
   internal/storage/postgres/pool_test.go  тесты, база не нужна
 ```
 
 ```go
+// Config — настройки пула. Занулённое поле означает «оставить дефолт pgx».
+type Config struct {
+    DSN               string
+    MaxConns          int32
+    MinConns          int32
+    MaxConnLifetime   time.Duration
+    MaxConnIdleTime   time.Duration
+    HealthCheckPeriod time.Duration
+    ApplicationName   string
+    StatementTimeout  time.Duration
+}
+
 // New создаёт пул соединений и проверяет, что база отвечает.
-func New(ctx context.Context, dsn string) (*pgxpool.Pool, error)
+func New(ctx context.Context, cfg Config) (*pgxpool.Pool, error)
+```
+
+Почему структура, а не отдельные аргументы: настройки — это данные, а не код. Сейчас
+`Config` заполняет `main` (только DSN), на этапе 7 туда же ляжет YAML из `cleanenv`,
+и `New` при этом не изменится. Вызов выглядит так:
+
+```go
+pool, err := postgres.New(ctx, postgres.Config{DSN: os.Getenv("POSTGRES_DSN")})
 ```
 
 Появление пакета `internal/storage/postgres` — это и есть начало storage-слоя: здесь потом
@@ -26,13 +46,16 @@ func New(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 
 ## Требования
 
-- DSN приходит снаружи — `os.Getenv("POSTGRES_DSN")` в `main`. Ни строки подключения,
-  ни пароля в коде. Пустой DSN — внятная ошибка конфигурации, а не паника и не
-  `dial tcp: missing address`.
+- DSN приходит снаружи — `os.Getenv("POSTGRES_DSN")` в `main`, дальше через `Config`.
+  Ни строки подключения, ни пароля в коде. Пустой DSN — внятная ошибка конфигурации,
+  а не паника и не `dial tcp: missing address`.
 - Пул настраивается осознанно: `MaxConns`, `MinConns`, `MaxConnLifetime`, `MaxConnIdleTime`,
-  `HealthCheckPeriod`. В коммите объясни, почему такие значения. Дефолты `pgxpool.ParseConfig`
-  стоит прочитать: часть параметров там уже разумная.
-- `application_name=inventory-service` в `RuntimeParams` — в `pg_stat_activity` видно, кто пришёл.
+  `HealthCheckPeriod` — каждое выбранное значение объясняешь в коммите. Начинай
+  с `pgxpool.ParseConfig(dsn)` и переопределяй только то, что выбрал; дефолты там разумные
+  (`MaxConns = max(4, NumCPU)`, время жизни 1h, idle 30m, health-check 1m), и перебить их
+  настройкой хуже — самая частая ошибка в этой задаче.
+- `application_name=inventory-service` (поле `Config.ApplicationName`, по умолчанию — имя сервиса)
+  в `RuntimeParams` — в `pg_stat_activity` видно, кто пришёл.
 - `statement_timeout` (например, 5s) — чтобы одна кривая выборка не держала соединение вечно.
 - Проверка при старте: `Ping` с отдельным таймаутом, а не «пока не отвалится».
 - При старте же выполни `SELECT current_setting('application_name'), current_setting('statement_timeout')`
@@ -44,8 +67,9 @@ func New(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 
 ## Тесты (сразу, не потом)
 
-Без базы, таблицей: пустой DSN → ошибка; мусорный DSN (`не-dsn`) → ошибка, и через `errors.As`
-достаётся тип ошибки pgx. Это дешёвые тесты, которые ловят регрессию в разборе DSN.
+Без базы, таблицей: пустой `Config{}.DSN` → ошибка; мусорный DSN (`не-dsn`) → ошибка, и через
+`errors.As` достаётся тип ошибки pgx; отрицательный `MaxConns` → ошибка валидации, а не пул
+с невнятным поведением. Это дешёвые тесты, которые ловят регрессию в разборе и проверке конфига.
 
 Тест с живой базой в этой задаче не нужен — он в задаче 7. Если хочется сейчас, делай через
 переменную окружения и `t.Skip`, когда `POSTGRES_DSN` не задан.
