@@ -1,0 +1,13 @@
+{
+  "name": "forno: tools + PostgreSQL",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "tools",
+  "workspaceFolder": "/work",
+  "overrideCommand": false,
+  "shutdownAction": "none",
+  "customizations": {
+    "jetbrains": {
+      "backend": "GoLand"
+    }
+  }
+}

@@ -50,6 +50,7 @@ make lint     # форматирование и проверки
 docker/Dockerfile.tools   образ с Go и инструментами
 services/*                сервисы, каждый — отдельный Go-модуль
 tasks/stage-N/*           ТЗ задач этапа: один файл на задачу
+.devcontainer/*           открытие проекта в контейнере (GoLand, VS Code)
 go.work                   воркспейс, связывает модули между собой
 docker-compose.yml        инфраструктура: tools и PostgreSQL (дальше Kafka и Redis)
 Makefile                  все команды проекта
