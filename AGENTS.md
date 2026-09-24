@@ -36,7 +36,9 @@
 Go и все инструменты живут внутри Docker-образа `forno/tools`, локальный Go не используется.
 Работать через `make`: `make help` — список команд, `make image` — собрать образ,
 `make db-up` / `make db-down` / `make psql`, `make build`, `make test`, `make test-race`,
-`make fmt`, `make fmt-diff`, `make lint`, `make lint-fix`.
+`make fmt`, `make fmt-diff`, `make lint`, `make lint-fix`, `make run` — запуск сервиса.
+Код из IDE запускать в контейнере: `.devcontainer/devcontainer.json` открывает проект
+в сервисе `tools` вместе с переменными окружения и сетью compose.
 
 - `.env` создаётся сам из `.env.example` и в git не хранится.
 - До базы два адреса: с хоста `localhost:5440`, из контейнера `postgres:5432`.
