@@ -19,4 +19,4 @@
 | 4 | Схема склада и миграция через goose | [04-schema-warehouse.md](stage-1/04-schema-warehouse.md) | готово |
 | 5 | Запросы через `squirrel`: вставка с возвратом ID, nullable-поля | [05-squirrel-queries.md](stage-1/05-squirrel-queries.md) | готово |
 | 6 | Репозиторий склада ингредиентов | [06-ingredient-repository.md](stage-1/06-ingredient-repository.md) | готово |
-| 7 | Интеграционные тесты репозитория против реальной базы | — | запланирована |
+| 7 | Интеграционные тесты репозитория против реальной базы | [07-integration-tests.md](stage-1/07-integration-tests.md) | выдано |
