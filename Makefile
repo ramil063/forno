@@ -113,7 +113,9 @@ test-race:
 
 # Интеграционные тесты: файлы с тегом `//go:build integration`.
 # Идут только по явному вызову — обычные test/test-race их не запускают.
+# Линтер тоже запускаем с тегом: без него файлы под тегом он просто не видит.
 test-integration:
+	$(call for_each_module,golangci-lint run --build-tags=integration ./...)
 	$(call for_each_module,go test -race -count=1 -tags=integration ./...)
 
 vet:
