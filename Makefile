@@ -3,7 +3,7 @@ TOOLS := $(COMPOSE) run --rm -T tools
 
 .DEFAULT_GOAL := help
 
-.PHONY: help image shell run hooks db-up db-down db-logs psql build test test-race vet fmt fmt-diff lint lint-fix versions ps clean migrate-up migrate-down migrate-status migrate-create
+.PHONY: help image shell run hooks db-up db-down db-logs psql build test test-race test-integration vet fmt fmt-diff lint lint-fix versions ps clean migrate-up migrate-down migrate-status migrate-create
 
 help:
 	@echo "forno — полезные команды:"
@@ -22,6 +22,7 @@ help:
 	@echo "  make build      go build ./..."
 	@echo "  make test       go test ./..."
 	@echo "  make test-race  go test -race ./... (тесты на гонки)"
+	@echo "  make test-integration  интеграционные тесты (нужна живая база)"
 	@echo "  make vet        go vet ./..."
 	@echo "  make fmt        форматирование: отступы (gofmt) + порядок импортов (gci)"
 	@echo "  make fmt-diff   показать, что не отформатировано, ничего не меняя"
@@ -58,7 +59,7 @@ hooks:
 
 # Без .env docker compose не подставит порты и доступы к базе, поэтому он нужен всем
 # целям, которые заходят в compose — иначе первый же make после клонирования упадёт
-image shell run build test test-race vet fmt fmt-diff lint lint-fix versions ps db-up db-down db-logs psql migrate-up migrate-down migrate-status migrate-create: .env
+image shell run build test test-race test-integration vet fmt fmt-diff lint lint-fix versions ps db-up db-down db-logs psql migrate-up migrate-down migrate-status migrate-create: .env
 
 db-up: .env
 	$(COMPOSE) up -d postgres
@@ -109,6 +110,13 @@ test:
 
 test-race:
 	$(call for_each_module,go test -race ./...)
+
+# Интеграционные тесты: файлы с тегом `//go:build integration`.
+# Идут только по явному вызову — обычные test/test-race их не запускают.
+# Линтер тоже запускаем с тегом: без него файлы под тегом он просто не видит.
+test-integration:
+	$(call for_each_module,golangci-lint run --build-tags=integration ./...)
+	$(call for_each_module,go test -race -count=1 -tags=integration ./...)
 
 vet:
 	$(call for_each_module,go vet ./...)
