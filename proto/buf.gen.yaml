@@ -1,0 +1,19 @@
+version: v2
+
+# go_package не пишем в каждом .proto: buf подставляет префикс сам.
+# Для proto/inventory/v1/*.proto получится
+# github.com/ramil063/forno/proto/inventory/v1.
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/ramil063/forno/proto
+
+plugins:
+  # paths=source_relative — код кладётся рядом с .proto, а не в отдельное дерево.
+  - local: protoc-gen-go
+    out: .
+    opt: paths=source_relative
+  - local: protoc-gen-go-grpc
+    out: .
+    opt: paths=source_relative

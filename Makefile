@@ -3,13 +3,14 @@ TOOLS := $(COMPOSE) run --rm -T tools
 
 .DEFAULT_GOAL := help
 
-.PHONY: help image shell run hooks db-up db-down db-logs psql build test test-race test-integration vet fmt fmt-diff lint lint-fix versions ps clean migrate-up migrate-down migrate-status migrate-create
+.PHONY: help image shell run gen hooks db-up db-down db-logs psql build test test-race test-integration vet fmt fmt-diff lint lint-fix versions ps clean migrate-up migrate-down migrate-status migrate-create
 
 help:
 	@echo "forno — полезные команды:"
 	@echo "  make image      собрать образ с инструментами (один раз, ~5 минут)"
 	@echo "  make shell      зайти в контейнер с исходниками"
 	@echo "  make run        запустить inventory-service (внутри контейнера)"
+	@echo "  make gen        сгенерировать Go-код из proto (buf lint + buf generate)"
 	@echo "  make hooks      подключить git-хуки (один раз после клонирования)"
 	@echo "  make db-up      поднять PostgreSQL (при первом запуске создаст .env)"
 	@echo "  make db-down    остановить контейнеры"
@@ -45,6 +46,12 @@ shell:
 run:
 	$(TOOLS) sh -c 'cd services/inventory-service && go run ./cmd'
 
+# Контракты — в proto/. Код генерируется рядом с .proto (paths=source_relative)
+# и коммитится: тогда make build не требует buf и protoc-gen-go.
+# proto lint идёт первым: кривой контракт лучше не генерировать вовсе.
+gen:
+	$(TOOLS) sh -c 'cd proto && buf lint && buf generate'
+
 # Хуки лежат в репозитории, но включаются локально — поэтому этот вызов нужен один раз.
 # pre-commit и pre-push не дают коммитить и пушить прямо в main.
 hooks:
@@ -59,7 +66,7 @@ hooks:
 
 # Без .env docker compose не подставит порты и доступы к базе, поэтому он нужен всем
 # целям, которые заходят в compose — иначе первый же make после клонирования упадёт
-image shell run build test test-race test-integration vet fmt fmt-diff lint lint-fix versions ps db-up db-down db-logs psql migrate-up migrate-down migrate-status migrate-create: .env
+image shell run gen build test test-race test-integration vet fmt fmt-diff lint lint-fix versions ps db-up db-down db-logs psql migrate-up migrate-down migrate-status migrate-create: .env
 
 db-up: .env
 	$(COMPOSE) up -d postgres

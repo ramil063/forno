@@ -1,0 +1,17 @@
+version: v2
+
+# Контракты лежат в этом же модуле: inventory/v1/*.proto и так далее.
+modules:
+  - path: .
+
+lint:
+  use:
+    - STANDARD
+  except:
+    # Имена пакетов и версии разбираем на этапе проектирования контракта;
+    # правило про directory-match включим, когда появится второй сервис.
+    - PACKAGE_DIRECTORY_MATCH
+
+breaking:
+  use:
+    - FILE
