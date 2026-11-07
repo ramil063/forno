@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+// Ping — дымовой контракт: проверяем, что генерация, сервер и клиент живы.
+// Контракт ингредиентов появится в следующей задаче отдельным файлом.
+service InventoryService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string message = 1;
+}
