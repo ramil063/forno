@@ -20,3 +20,16 @@
 | 5 | Запросы через `squirrel`: вставка с возвратом ID, nullable-поля | [05-squirrel-queries.md](stage-1/05-squirrel-queries.md) | готово |
 | 6 | Репозиторий склада ингредиентов | [06-ingredient-repository.md](stage-1/06-ingredient-repository.md) | готово |
 | 7 | Интеграционные тесты репозитория против реальной базы | [07-integration-tests.md](stage-1/07-integration-tests.md) | готово |
+
+## Этап 2 — gRPC: контракт раньше кода
+
+| № | Задача | Файл | Статус |
+|---|---|---|---|
+| 1 | Инфра контрактов: модуль `proto`, buf, `make gen` | — (без ТЗ, делал агент) | готово |
+| 2 | Контракт inventory-service: CRUD ингредиентов | [02-inventory-contract.md](stage-2/02-inventory-contract.md) | готово |
+| 3 | gRPC-сервер поверх репозитория | — | запланирована |
+| 4 | Проверка через `grpcurl`: создать и прочитать по сети | — | запланирована |
+| 5 | Интерцепторы: логирование и recover от паник | — | запланирована |
+| 6 | Валидация входа через `protovalidate` | — | запланирована |
+| 7 | gRPC-Gateway + Swagger UI | — | запланирована |
+| 8 | `payment-service` на gRPC без своей БД | — | запланирована |

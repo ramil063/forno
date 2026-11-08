@@ -214,7 +214,7 @@ git switch main && git pull
 ### Этап 2 — gRPC: контракт раньше кода
 
 - [x] `buf.yaml` / `buf.gen.yaml`, генерация Go-кода одной командой `make gen`
-- [ ] `.proto` для `inventory-service`: CRUD ингредиентов
+- [x] `.proto` для `inventory-service`: CRUD ингредиентов
 - [ ] gRPC-сервер и клиент поверх готового репозитория
 - [ ] Интерцепторы: логирование и recover от паник
 - [ ] Валидация входа до попадания в бизнес-логику (`protovalidate`)
