@@ -7,23 +7,32 @@
 - **Готово, когда:** `make gen` проходит без замечаний buf, а `make build` собирает
   сгенерированный пакет.
 
-## Важно: сервис живёт в одном файле
+## Как это делают: сервис — по ресурсу, health — отдельно
 
-В protobuf `service` нельзя размазать по нескольким файлам. Сейчас `Ping` объявлен
-в `proto/inventory/v1/ping.proto` внутри `service InventoryService`. Значит методы ингредиентов
-туда же добавить не получится, пока сервис живёт в другом файле.
+В protobuf `service` нельзя размазать по нескольким файлам — это факт. Но вопрос не в этом,
+а в том, что вообще должно быть сервисом.
 
-Два честных пути:
+В больших компаниях (Google API Design Guide и AIP — их публичные правила проектирования API)
+принято так:
 
-1. **Переименовать `ping.proto` → `inventory.proto`** и держать один `InventoryService`
-   (Ping + ингредиенты). Проще для клиента, и сервис один.
-2. Оставить `InventoryService` с Ping и завести второй сервис `IngredientService`
-   в `ingredient.proto`. Два сервиса на одном сервере — нормально, но клиенту придётся
-   знать про оба.
+- **Сервис называется по ресурсу, которым управляет:** `IngredientService`, а не
+  «InventoryService со всем подряд». Методы стандартные: `Create`/`Get`/`List`
+  (позже `Update`/`Delete`). Один ресурс — один сервис; несколько сервисов в одном пакете
+  и на одном gRPC-сервере — норма: сервер регистрирует их все, клиент берёт нужный.
+- **Health/Ping не живёт в доменном сервисе.** Для этого есть стандартный протокол
+  `grpc.health.v1.Health` (его понимают grpc-health-probe, Kubernetes, Envoy). Свой `Ping`
+  в контракте — временный костыль для дымового теста, а не часть API.
 
-Рекомендую первый: один сервис, один файл, меньше сущностей. После переименования **удали
-старые сгенерированные `ping.pb.go` и `ping_grpc.pb.go`** — `make gen` не удаляет файлы,
-которые перестали генерироваться, и в пакете останется мусор с тем же именем сервиса.
+Поэтому делаем так:
+
+1. Удаляем `ping.proto` и сгенерированные `ping.pb.go` / `ping_grpc.pb.go`: `make gen`
+   не удаляет файлы, которые перестали генерироваться, и в пакете останется мусор.
+2. Создаём `proto/inventory/v1/ingredient.proto` с `package inventory.v1`
+   и `service IngredientService`.
+3. Дымовой проверкой на этапах 2.3–2.4 будет настоящий `Create`/`Get` через grpcurl —
+   это полезнее Ping: сразу проверяется сквозной путь до базы.
+4. Стандартный health-сервис добавим на этапе 7 или 10 — это отдельный готовый контракт,
+   писать его руками не надо.
 
 ## Что должно быть в контракте
 
@@ -32,6 +41,11 @@
 обещать то, чего сервис не может.
 
 ```proto
+service IngredientService {
+  rpc CreateIngredient(CreateIngredientRequest) returns (CreateIngredientResponse);
+  rpc GetIngredient(GetIngredientRequest) returns (GetIngredientResponse);
+  rpc ListIngredients(ListIngredientsRequest) returns (ListIngredientsResponse);
+}
 message Ingredient {
   int64 id = 1;
   string name = 2;
@@ -95,7 +109,8 @@ message ListIngredientsResponse { repeated Ingredient ingredients = 1; }
 - [ ] в контракте есть `Ingredient` со всеми семью полями схемы, включая `Timestamp`
 - [ ] `description` — `optional`; времена — `google.protobuf.Timestamp`
 - [ ] нет `Update`/`Archive`, которых не умеет хранилище
-- [ ] старые `ping.*.go` удалены, в пакете нет двух определений `InventoryService`
+- [ ] `ping.proto` и его сгенерированные файлы удалены; сервис называется `IngredientService`,
+      `Ping` в контракте нет
 - [ ] `make fmt-diff`, `make lint` — чистые
 
 ## Вопросы к размышлению (ответь в коммите)
