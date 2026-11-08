@@ -25,6 +25,8 @@ services:
       # её подставляет окружение (здесь — compose, на этапе 11 — оркестратор).
       # Отличается от .env: внутри compose-сети база доступна по имени сервиса, а не localhost.
       POSTGRES_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      # Адрес, который слушает gRPC-сервер inventory-service (этап 2).
+      INVENTORY_GRPC_ADDR: ":8090"
     depends_on:
       postgres:
         condition: service_healthy
